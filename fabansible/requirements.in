@@ -1,0 +1,8 @@
+ansible==8.5.0
+ansible-lint==6.21.1
+docker==6.1.3
+fabric==3.2.2
+molecule==6.0.2
+molecule-docker==2.1.0
+requests==2.31.0
+yamllint==1.32.0
