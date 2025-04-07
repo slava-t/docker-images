@@ -5,6 +5,7 @@ RUN echo "tzdata tzdata/Areas select America" | debconf-set-selections && \
     echo "tzdata tzdata/Zones/America select Toronto" | debconf-set-selections && \
     apt-get update && \
     apt-get dist-upgrade -y && \
+    apt-get install -y sudo && \
     apt-get install -y openssh-client && \
     apt-get install -y apt-transport-https ca-certificates software-properties-common && \
     apt-get install -y build-essential git && \
