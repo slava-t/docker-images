@@ -1,0 +1,12 @@
+---
+- hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+  - name: set time zone to Etc/UTC
+    ansible.builtin.shell: 'timedatectl set-timezone Etc/UTC'
+  - name: make sure ntp service is started
+    ansible.builtin.service:
+      name: ntp
+      enabled: true
+      state: started

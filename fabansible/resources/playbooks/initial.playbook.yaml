@@ -1,0 +1,77 @@
+---
+- hosts: all
+  become: true
+  gather_facts: true
+  any_errors_fatal: true
+    #we need this task when we want to make sure the machine has the target ip
+    #this is used when the machine can forward ssh to a different box and
+    #we need to destinguish the front box from the backend one
+  tasks:
+  - name: Check if the host ip is listed with ip addr
+    ansible.builtin.shell: |
+      ip addr | grep 'inet ' | awk '{print $2}' | cut -d/ -f1 | grep "{{ host_ip }}"
+    when: host_ip is defined
+  - name: Remove  unattended-upgrades and needrestart packages
+    ansible.builtin.apt:
+      name:
+      - unattended-upgrades
+      - needrestart
+      state: absent
+      autoremove: yes
+      purge: yes
+    when: ansible_distribution == 'Ubuntu'
+  - name: Install sudo
+    ansible.builtin.apt:
+      name:
+        - sudo
+      update_cache: true
+      cache_valid_time: 86400
+  - name: Create user
+    ansible.builtin.user:
+      name: "{{ ssh_user }}"
+      password: "{{ user_password }}"
+      shell: '/bin/bash'
+      append: true
+      groups: "sudo, adm"
+  - name: set authorized key from d2_host
+    ansible.posix.authorized_key:
+      user: "{{ ssh_user }}"
+      state: present
+      key: "{{ lookup('file', public_ssh_file) }}"
+  - name: sshd config
+    ansible.builtin.shell: 'cp /etc/ssh/sshd_config /etc/ssh/sshd_config.$(date -u +"%Y%m%d%H%M%S%N").bak'
+  - name: config sshd
+    include_tasks: set_sshd_attribute.tasks.yaml
+    loop:
+    - name: PasswordAuthentication
+      value: 'no'
+    - name: PermitEmptyPasswords
+      value: 'no'
+    - name: PermitRootLogin
+      value: 'no'
+    - name: ClientAliveInterval
+      value: '600'
+    - name: Protocol
+      value: '2'
+    - name: ChallengeResponseAuthentication
+      value: 'no'
+    - name: KerberosAuthentication
+      value: 'no'
+    - name: GSSAPIAuthentication
+      value: 'no'
+    - name: X11Forwarding
+      value: 'no'
+    - name: PermitUserEnvironment
+      value: 'no'
+    - name: AllowAgentForwarding
+      value: 'no'
+    - name: AllowTcpForwarding
+      value: 'no'
+    - name: PermitTunnel
+      value: 'no'
+    - name: DebianBanner
+      value: 'no'
+  - name: restart sshd service
+    service:
+      name: ssh
+      state: restarted

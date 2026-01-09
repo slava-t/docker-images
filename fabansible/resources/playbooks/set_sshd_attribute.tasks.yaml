@@ -1,0 +1,12 @@
+---
+- name: remove config option
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regex: '^\s*{{ item.name }}'
+    state: absent
+- name: add config option
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    line: "{{ item.name }} {{ item.value }}"
+    state: present
+

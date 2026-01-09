@@ -1,0 +1,22 @@
+---
+- hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+  - name: Upgrade all apt packages
+    ansible.builtin.apt:
+      update_cache: true
+      upgrade: dist
+      force_apt_get: true
+  - name: Check if reboot required
+    ansible.builtin.stat:
+      path: /var/run/reboot-required
+    register: reboot_required_file
+  - name: Reboot if required after updating
+    ansible.builtin.include_tasks:
+      file: reboot.tasks.yaml
+  - name: install aptitude
+    ansible.builtin.apt:
+      name: aptitude
+      state: latest
+      update_cache: true

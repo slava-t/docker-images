@@ -1,0 +1,66 @@
+---
+- hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+  - name: stop docker service
+    ansible.builtin.service:
+      name: docker
+      state: stopped
+    ignore_errors: true
+  - name: stop docker socket
+    ansible.builtin.systemd:
+      name: docker.socket
+      state: stopped
+    ignore_errors: true
+  - name: Remove  docker related packages
+    ansible.builtin.apt:
+      name:
+      - docker-engine
+      - docker
+      - docker
+      - docker.io
+      - docker-ce
+      - docker-compose-plugin
+      state: absent
+      autoremove: yes
+      purge: yes
+    when: ansible_distribution == 'Ubuntu'
+  - name: Remove docker related files
+    file:
+      path: '{{ item }}'
+      state: absent
+    with_items:
+      - /var/lib/docker
+      - /etc/docker
+      - /etc/apparmor.d/docker
+      - /var/run/docker.sock
+      - /var/lib/apt/lists/download.docker.com*
+
+  - name: Add Docker GPG key
+    ansible.builtin.apt_key:
+      url: "https://download.docker.com/linux/ubuntu/gpg"
+      state: present
+
+  - name: add docker repository
+    apt_repository:
+      repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu jammy stable
+      state: present
+
+  - name: install docker
+    ansible.builtin.apt:
+      name: "{{ packages }}"
+      state: present
+      update_cache: true
+      allow_downgrade: true
+    vars:
+      packages:
+        - docker-ce=5:27.3.1-1~ubuntu.24.04~noble
+        - docker-ce-cli=5:27.3.1-1~ubuntu.24.04~noble
+        - containerd.io=1.7.25-1
+        - docker-compose-plugin
+  - name: add current ssh user to docker group
+    ansible.builtin.user:
+      name: '{{ ansible_ssh_user }}'
+      groups: docker
+      append: true
